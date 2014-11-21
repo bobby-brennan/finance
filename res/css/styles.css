@@ -1,0 +1,39 @@
+
+body {
+  font: 10px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+.price {
+  fill: none;
+  stroke: steelblue;
+  stroke-width: 1.5px;
+}
+
+.adj {
+  fill: none;
+  stroke: #f1c40f;
+  stroke-width: 1.5px;
+}
+
+.maxima {
+  fill: none;
+  stroke: #2ecc71;
+  stroke-width: 1px;
+}
+
+.minima {
+  fill: none;
+  stroke: #c0392b;
+  stroke-width: 1px;
+}
