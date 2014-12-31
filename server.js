@@ -1,15 +1,17 @@
-var EXPRESS = require('express');
-var APP = EXPRESS();
+var Express = require('express');
+var App = Express();
 
-APP.set('views', __dirname + '/views')
-APP.set('view engine', 'ejs');
+App.set('views', __dirname + '/views')
+App.set('view engine', 'ejs');
 
-APP.get('/', function(req, res) {
+App.get('/', function(req, res) {
   res.render('chart');
 });
 
-APP.get('/res/*', function(req, res) {
-  res.sendFile(__dirname + req.url);
+App.get('/options', function(req, res) {
+  res.render('options');
 });
 
-APP.listen(3060);
+App.use('/', Express.static(__dirname + '/res'));
+
+App.listen(3060);

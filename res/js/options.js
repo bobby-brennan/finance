@@ -9,7 +9,7 @@ var margin = {top: 20, right: 20, bottom: 30, left: 50},
     width = 960 - margin.left - margin.right,
     height = 500 - margin.top - margin.bottom;
 
-var parseDate = d3.time.format("%Y-%m-%d").parse;
+var parseDate = d3.time.format("%m/%d/%Y").parse;
 
 var x = d3.time.scale()
     .range([0, width]);
@@ -30,8 +30,8 @@ var line = d3.svg.line()
     .y(function(d) { return y(d.close); });
 */
 var adj = d3.svg.line()
-    .x(function(d) { return x(d.date); })
-    .y(function(d) { return y(d.adjclose); });
+    .x(function(d) { return x(d.expdate); })
+    .y(function(d) { return y(d.Price + d.strike); });
 
 var initSvg = function() {
   var svg = d3.select("#chart").append("svg")
@@ -141,9 +141,10 @@ var filterExtremesByDist = function(extremes, num) {
   console.log('filtered:' + JSON.stringify(extremes));
 }
 
-var render = function() {
-  x.domain(d3.extent(mData, function(d) { return d.date; }));
-  y.domain(d3.extent(mData, function(d) { return d.adjclose }));
+var render = function(data) {
+  mData = data;
+  x.domain(d3.extent(mData, function(d) { return d.expdate; }));
+  y.domain(d3.extent(mData, function(d) { return d.Price + d.strike}));
 
   var yAxisElem = svg.select(".y.axis");
   yAxisElem.selectAll('text').remove();
@@ -176,12 +177,12 @@ var render = function() {
 }
 
 $(document).ready(function() {
-  Quandl.loadData('GOOG', render);
+  Quandl.loadOptionsData(null, render);
   $('#ticker').on('change', function() {
-    Quandl.loadData($('#ticker').val(), render);
+    Quandl.loadOptionsData(null, render);
   });
   var reloadAll = function() {
-    Quandl.loadData($('#ticker').val(), $('#startDate').val(), $('#endDate').val(), render);
+    Quandl.loadOptionsData(null, render);
   };
   $('#startDate').on('change', reloadAll);
   $('#endDate').on('change', reloadAll);

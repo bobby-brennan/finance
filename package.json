@@ -1,0 +1,27 @@
+{
+  "name": "finance",
+  "version": "0.0.0",
+  "description": "finance =======",
+  "main": "server.js",
+  "dependencies": {
+    "csvtojson": "^0.3.17",
+    "ejs": "^1.0.0",
+    "express": "^4.10.2",
+    "prettyjson": "^1.0.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bobby-brennan/finance.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/bobby-brennan/finance/issues"
+  },
+  "homepage": "https://github.com/bobby-brennan/finance"
+}
