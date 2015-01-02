@@ -5,9 +5,9 @@ var mMaxima = [];
 var mInfoDate;
 var mFit = 3;
 
-var margin = {top: 20, right: 20, bottom: 30, left: 50},
-    width = 960 - margin.left - margin.right,
-    height = 500 - margin.top - margin.bottom;
+var margin = {top: 50, right: 50, bottom: 50, left: 50},
+    width = 1200 - margin.left - margin.right,
+    height = 700 - margin.top - margin.bottom;
 
 var parseDate = d3.time.format("%m/%d/%Y").parse;
 
@@ -19,19 +19,16 @@ var y = d3.scale.linear()
 
 var xAxis = d3.svg.axis()
     .scale(x)
+    .tickFormat(d3.time.format("%m/%d"))
     .orient("bottom");
 
 var yAxis = d3.svg.axis()
     .scale(y)
     .orient("left");
-/*
-var line = d3.svg.line()
-    .x(function(d) { return x(d.date); })
-    .y(function(d) { return y(d.close); });
-*/
-var adj = d3.svg.line()
+
+var optionLine = d3.svg.line()
     .x(function(d) { return x(d.expdate); })
-    .y(function(d) { return y(d.Price + d.strike); });
+    .y(function(d) { return y(getYValue(d)); });
 
 var initSvg = function() {
   var svg = d3.select("#chart").append("svg")
@@ -54,97 +51,41 @@ var initSvg = function() {
       .attr("dy", ".71em")
       .style("text-anchor", "end")
       .text("Price ($)");
-/*
-  svg.append("path")
-      .datum(mData)
-      .attr("class", "price")
-      .attr("d", line);
-*/
-  svg.append("path")
-      .datum(mData)
-      .attr("class", "adj")
-      .attr("d", adj);
-
-  svg.append('path')
-      .datum(mMinima)
-      .attr('class', 'minima')
-      .attr('d', adj);
-
-  svg.append('path')
-      .datum(mMaxima)
-      .attr('class', 'maxima')
-      .attr('d', adj);
 
   return svg;
 }
 
 var svg = initSvg();
+var mPutsByStrike = {};
+var mCallsByStrike = {};
 
-var processData = function() {
-    generateExtremes();
-    calculateDists(mMaxima, mData, true);
-    calculateDists(mMinima, mData, false);
-    filterExtremesByDist(mMaxima, mFit);
-    filterExtremesByDist(mMinima, mFit);
-}
-
-var generateExtremes = function() {
-  mMinima = [];
-  mMaxima = [];
-  for (var i = 0; i < mData.length; ++i) {
-    if (mInfoDate && mData[i].date.getTime() > mInfoDate.getTime()) {
-      console.log('skip:' + mData[i].date);
-      continue;
-    }
-    var leftMin = i == 0 || mData[i-1].adjclose >= mData[i].adjclose;
-    var rightMin = i == mData.length - 1 || mData[i+1].adjclose > mData[i].adjclose;
-    var leftMax = i == 0 || mData[i-1].adjclose <= mData[i].adjclose;
-    var rightMax = (i == mData.length - 1) || (mData[i+1].adjclose < mData[i].adjclose);
-    if (leftMin && rightMin) {
-      mMinima.push(mData[i]);
-    } else if (leftMax && rightMax) {
-      mMaxima.push(mData[i]);
-    }
-  }
-  console.log('minima:' + mMinima.length + '   maxima:' + mMaxima.length);
-}
-
-var calculateDists = function(extremes, data, isMax) {
-  for (var i = 0; i < extremes.length; ++i) {
-    var val = extremes[i].adjclose;
-    for (var j = 0; j < data.length; ++j) {
-      if (i == j) {continue}
-      var valid = isMax ? val < data[j].adjclose : val > data[j].adjclose;
-      var dist = Math.abs(extremes[i].date.getTime() - data[j].date.getTime());
-      if(valid && (!extremes[i].dist || dist < extremes[i].dist)) {
-        extremes[i].dist = dist;
-        extremes[i].distDate = data[j].date;
-        extremes[i].distPrice = data[j].adjclose;
-      }
-    }
-  }
-}
-
-var filterExtremesByDist = function(extremes, num) {
-  extremes.sort(function(a, b) {
-    if (!a.dist && !b.dist) return b.date - a.date;
-    if (!a.dist) return -1;
-    if (!b.dist) return 1;
-    return b.dist - a.dist;
-  });
-
-  extremes.splice(num);
-
-  extremes.sort(function(a, b) {
-    return a.date - b.date;
-  });
-  console.log('filtered:' + JSON.stringify(extremes));
-}
 
 var render = function(data) {
   mData = data;
+  mData = mData.filter(function(d) { return d.expdate > parseDate($('#startDate').val()) && d.expdate < parseDate($('#endDate').val()) });
+  mData = mData.filter(function(d) { return d['Call/Put'] == 'Call' });
+  console.log('got data:' + JSON.stringify(data[0]))
+  //mData = mData.filter(function(d) { return d['Call/Put'] == 'Put' && d.strike > 525 });
   x.domain(d3.extent(mData, function(d) { return d.expdate; }));
-  y.domain(d3.extent(mData, function(d) { return d.Price + d.strike}));
+  y.domain(d3.extent(mData, getYValue))
+
+  d3.selectAll('.path-marker').remove();
+  d3.selectAll('.strike-label').remove();
+  d3.selectAll("path.call").remove();
+  d3.selectAll("path.put").remove();
+  mPutsByStrike = {};
+  mCallsByStrike = {};
+  mData.forEach(function(d) {
+    var byStrike = d['Call/Put'] == 'Call' ? mCallsByStrike : mPutsByStrike;
+    if (!byStrike[d.strike]) {
+      byStrike[d.strike] = [];
+    }
+    byStrike[d.strike].push(d);
+  });
+
+  addStrikeLines(mCallsByStrike, 'call');
+  addStrikeLines(mPutsByStrike, 'put');
+  addMouseMarker();
 
   var yAxisElem = svg.select(".y.axis");
   yAxisElem.selectAll('text').remove();
@@ -157,44 +98,158 @@ var render = function(data) {
   yAxisElem.call(yAxis);
 
   xAxisElem = svg.select('.x.axis');
-  xAxisElem.call(xAxis);
-/*
-  svg.select(".price")
-      .datum(mData)
-      .attr('d', line)
-*/
-  svg.select(".adj")
-      .datum(mData)
-      .attr('d', adj);
+  var ticks = mData.map(function(d) {return d.expdate});
+  xAxis.tickValues(ticks);
+  xAxisElem.call(xAxis)
+        .selectAll("text")  
+            .style("text-anchor", "end")
+            .attr("dy", "-.5em")
+            .attr("dx", "-1em")
+            .attr("transform", function(d) {
+                return "rotate(-90)" 
+            });
+}
 
-  svg.select('.minima')
-      .datum(mMinima)
-      .attr('d', adj);
+var addMouseMarker = function() {
+  d3.selectAll('.overlay').remove();
+  d3.selectAll('.focus').remove();
 
-  svg.select('.maxima')
-      .datum(mMaxima)
-      .attr('d', adj);
+  var foci = [];
+  for (var strike in mCallsByStrike) {
+    var focus = svg.append("g")
+        .attr("class", "focus")
+        .attr('data-strike', strike)
+        .style("display", "none");
+
+    focus.append("circle")
+        .attr("r", 4.5);
+
+    focus.append("text")
+        .attr("x", 9)
+        .attr("dy", ".35em");
+    foci.push(focus);
+  }
+
+  svg.append("rect")
+      .attr("class", "overlay")
+      .attr("width", width)
+      .attr("height", height)
+      .on("mouseover", function() { foci.forEach(
+        function(focus) { focus.style("display", null); }
+      )})
+      .on("mouseout", function() { foci.forEach(
+        function(focus) {focus.style("display", "none"); }
+      )})
+      .on("mousemove", mousemove);
+
+  function mousemove() {
+    var x0 = x.invert(d3.mouse(this)[0]);
+    var selected = {};
+    var minDiff = -1;
+    mData.forEach(function(d) {
+      var diff = Math.abs(d.expdate.getTime() - x0.getTime());
+      if (minDiff == -1 || diff < minDiff) {
+        selected = {};
+        selected[d.strike] = d;
+        minDiff = diff;
+      } else if (diff === minDiff) {
+        selected[d.strike] = d;
+      }
+    });
+    foci.forEach(function(focus) {
+      var strike = focus.attr('data-strike');
+      var data = mCallsByStrike[strike];
+      var d = selected[strike];
+      if (d) {
+        focus.style("display", null);
+        focus.attr("transform", "translate(" + x(d.expdate) + "," + y(getYValue(d)) + ")");
+        focus.select("text").text(getYValue(d));
+      } else {
+        focus.style("display", 'none');
+      }
+    })
+  }
+}
+
+
+var addStrikeLines = function(byStrike, type) {
+  var ramp=d3.scale.linear().domain(d3.extent(mData, getColorValue)).range(["white","green"]);
+  var strikes = Object.keys(byStrike);
+  for (var i = 0; i < strikes.length; ++i) {
+    var pathData = byStrike[strikes[i]];
+    svg.append('path')
+      .datum(pathData)
+      .attr('class', type + ' option-line')
+      .attr('d', optionLine)
+      .attr('stroke', '#00FF00')//ramp(+strikes[i]))
+    var lastDatumDate = d3.max(pathData, function(d) {return d.expdate});
+    var lastDatum;
+    pathData.forEach(function(d) {
+      if (d.expdate === lastDatumDate) {
+        lastDatum = d;
+      }
+      svg.append("circle")
+         .attr('class', type + ' path-marker')
+         .attr('r', 3)
+         .attr('transform', 'translate(' + x(d.expdate) + ',' + y(getYValue(d)) + ')')
+         .attr('fill', ramp(getColorValue(d)))
+    });
+    svg.append("text")
+      .attr("transform", "translate(" + x(lastDatum.expdate) + "," + y(getYValue(lastDatum)) + ")")
+      .attr("dy", "1px")
+      .attr("dx", "1em")
+      .attr("text-anchor", "start")
+      .attr('class', type + ' strike-label')
+      .text(lastDatum.strike);
+  }
+}
+
+var getYValue = function(d) {
+  return d[$('#yValue').val()];
+}
+
+var getColorValue = function(d) {
+  return d.Price;
+}
+
+var getValueRatio = function(d) {
+  return getBreakEvenPrice(d) / d.strike;
+}
+
+var getVega = function(d) {
+  return d.Price;
+}
+
+var getBreakEvenPrice = function(d) {
+  var mult = d['Call/Put'] === 'Call' ? 1 : -1;
+  var ret = mult * d.Price + d.strike;
+  return ret;
 }
 
 $(document).ready(function() {
-  Quandl.loadOptionsData(null, render);
+  CBOE.loadOptionsData('goog', render);
   $('#ticker').on('change', function() {
-    Quandl.loadOptionsData(null, render);
+    CBOE.loadOptionsData($('#ticker').val(), render);
   });
   var reloadAll = function() {
-    Quandl.loadOptionsData(null, render);
+    CBOE.loadOptionsData($('#ticker').val(), render);
   };
+
+  $('#ticker').val('goog');
+  $('#startDate').val('01/01/2015');
+  $('#endDate').val('03/01/2015');
+  $('#yValue').val('Price')
+
   $('#startDate').on('change', reloadAll);
   $('#endDate').on('change', reloadAll);
+  $('#yValue').on('change', reloadAll);
   $('#infoDate').on('change', function() {
     mInfoDate = $('#infoDate').val();
     if (mInfoDate) mInfoDate = parseDate(mInfoDate);
-    processData();
     render();
   });
   $('#fit').on('change', function() {
     mFit = +$('#fit').val();
-    processData();
     render(); 
   });
 });

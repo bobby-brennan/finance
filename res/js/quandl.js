@@ -1,4 +1,5 @@
 var Quandl = {};
+var CBOE = {};
 var DB = 'WIKI';                                                                                                                                               
 Quandl.dataUrl = function(ticker, startDate, endDate) {
   var ret = "https://www.quandl.com/api/v1/datasets/" + DB + "/" + ticker + ".json?auth_token=1xkdHCMigj6iDyEoGizy";                                           
@@ -34,20 +35,16 @@ Quandl.rewriteData = function(fileData) {
   return data;                                                                                                                                                 
 };
 
-Quandl.loadOptionsData = function(file, onDone) {
-  if (!file) file = 'http://54.68.181.251:3060/data/nflx_20141231_options.json';
-  console.log('loading:' + file);
+
+CBOE.loadOptionsData = function(ticker, onDone) {
+  var file = 'http://' + document.location.hostname + ':' + document.location.port + '/data/' + ticker + '_20141231_options.json';
+  var url = "http://cboe.ivolatility.com/adv_options.csv?tm=4&percent=50&expdate=-1&scp=3&ticker=ZNGA:NASDAQ&R=1";
   d3.json(file, function(err, json) {
     console.log('json:' + JSON.stringify(json[0]));
     for (var i = 0; i < json.length; ++i) {
       json[i]['expdate'] = parseDate(json[i]['expdate']);
     }
-    byStrike = {};
-    json.foreach(function(d) {
-      byStrike[d.strike] = d;
-    });
-    
-    onDone(byStrike);
+    onDone(json);
   })
 }
 

@@ -3,6 +3,11 @@ body {
   font: 10px sans-serif;
 }
 
+.overlay {
+  fill: none;
+  pointer-events: all;
+}
+
 .axis path,
 .axis line {
   fill: none;
@@ -37,3 +42,13 @@ body {
   stroke: #c0392b;
   stroke-width: 1px;
 }
+
+.option-line {
+  fill: none;
+  stroke-width: 1px;
+}
+
+.path-marker {
+  r: 5px;
+}
+
