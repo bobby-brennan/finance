@@ -37,9 +37,10 @@ Quandl.rewriteData = function(fileData) {
 
 
 CBOE.loadOptionsData = function(ticker, onDone) {
-  var file = 'http://' + document.location.hostname + ':' + document.location.port + '/data/' + ticker + '_20141231_options.json';
-  var url = "http://cboe.ivolatility.com/adv_options.csv?tm=4&percent=50&expdate=-1&scp=3&ticker=ZNGA:NASDAQ&R=1";
+  var file = 'http://' + document.location.hostname + ':' + document.location.port + '/data/' + ticker + '_20150124_options.json';
+  //var url = "http://cboe.ivolatility.com/adv_options.csv?tm=4&percent=50&expdate=-1&scp=3&ticker=ZNGA:NASDAQ&R=1";
   d3.json(file, function(err, json) {
+    if (err) throw err;
     console.log('json:' + JSON.stringify(json[0]));
     for (var i = 0; i < json.length; ++i) {
       json[i]['expdate'] = parseDate(json[i]['expdate']);
