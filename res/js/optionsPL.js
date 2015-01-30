@@ -37,6 +37,14 @@ var getProfit100 = function (option, price) {
   return getProfit(option, price, 100);
 }
 
+var getOptionPath = function(option, priceRange) {
+    if (option.Price === 0) return
+    var pathData = [{option: option, stockPrice: priceRange[0]},
+                    {option: option, stockPrice: option.strike},
+                    {option: option, stockPrice: priceRange[1]}];
+    return pathData;
+}
+
 var getProfit = function(option, stockPrice, costBasis) {
   if (option.strike >= stockPrice) {
     return -costBasis;
@@ -71,7 +79,9 @@ var initSvg = function() {
 
 
 var addMouseSelect = function() {
+  console.log('add mouse move');
   function mousemove() {
+    console.log('mouse move');
     var x0 = x.invert(d3.mouse(this)[0]);
     var selected = null;
     var minDiff = -1;
@@ -82,6 +92,18 @@ var addMouseSelect = function() {
         minDiff = diff;
       }
     });
+
+    var pathData = getOptionPath(selected, x.domain());
+    console.log('pd:' + JSON.stringify(pathData));
+
+    d3.selectAll("path.option-line.highlighted").remove();
+
+    svg.append('path')
+      .datum(pathData)
+      .attr('class', 'option-line highlighted')
+      .attr('d', profitLine)
+      .attr('data-price', selected.Price)
+      .attr('stroke', '#0000FF')
 
     console.log('selected:' + selected.strike);
     $('#selected').html('Strike:' + selected.strike + '<br>Price:' + selected.Price);
@@ -124,9 +146,7 @@ var render = function(data) {
   mData.forEach(function(d) {
     console.log('price:' + d.Price);
     if (d.Price === 0) return
-    var pathData = [{option: d, stockPrice: xDom[0]},
-                    {option: d, stockPrice: d.strike},
-                    {option: d, stockPrice: xDom[1]}];
+    var pathData = getOptionPath(d, xDom);
     console.log("PATH:" + JSON.stringify(pathData))
     console.log('strike:' + d.strike);
     svg.append('path')

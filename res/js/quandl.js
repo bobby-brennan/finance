@@ -37,7 +37,7 @@ Quandl.rewriteData = function(fileData) {
 
 
 CBOE.loadOptionsData = function(ticker, onDone) {
-  var file = 'http://' + document.location.hostname + ':' + document.location.port + '/data/' + ticker + '_20150124_options.json';
+  var file = 'http://' + document.location.hostname + ':' + document.location.port + '/data/' + ticker + '_20150130_options.json';
   //var url = "http://cboe.ivolatility.com/adv_options.csv?tm=4&percent=50&expdate=-1&scp=3&ticker=ZNGA:NASDAQ&R=1";
   d3.json(file, function(err, json) {
     if (err) throw err;
